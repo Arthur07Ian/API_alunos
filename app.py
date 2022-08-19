@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, render_template, request
+from flask_restful import Resource, Api
 import json
 
 app = Flask(__name__)
+api = Api(app)
 
 alunos = [
     {'id': 0,
@@ -25,9 +27,8 @@ def homepage():
     return render_template('homepage.html')
 
 
-@app.route('/aluno/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-def aluno(id):
-    if request.method == 'GET':
+class Aluno(Resource):
+    def get(self, id):
         try:
             response = alunos[id]
         except IndexError:
@@ -37,31 +38,34 @@ def aluno(id):
             message = "Erro desconhecido"
             response = {"status": "erro", "message": message}
         finally:
-            return jsonify(response)
+            return response
 
-    elif request.method == 'PUT':
+    def put(self, id):
         dados = json.loads(request.data)
         alunos[id] = dados
-        return jsonify(dados)
-
-    elif request.method == 'DELETE':
+        return dados
+    
+    def delete(self, id):
         alunos.pop(id)
-        return jsonify({'status': 'sucesso', 'message': 'registro excluido'})
+        return {'status': 'sucesso', 'message': 'registro excluido'}
 
 
 
-
-@app.route('/aluno', methods=['POST', 'GET'])
-def registrar_aluno():
-    if request.method == 'POST':
+class Registrar_Aluno(Resource):
+    def get(self):
+        return alunos
+    
+    def post(self):
         dados = json.loads(request.data)
         posicao = len(alunos)
         dados['id'] = posicao
         alunos.append(dados)
-        return jsonify({"status": "sucesso", "message":"registro inserido, aluno inserido no ID {}".format(alunos[len(alunos)-1]['id'])})
-    elif request.method == 'GET':
-        return jsonify(alunos)
+        return {"status": "sucesso", "message":"registro inserido, aluno inserido no ID {}".format(alunos[len(alunos)-1]['id'])}
 
+
+
+api.add_resource(Aluno, '/aluno/<int:id>')
+api.add_resource(Registrar_Aluno, '/aluno')
 
 
 if __name__ == '__main__':
