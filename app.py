@@ -5,6 +5,8 @@ import json
 app = Flask(__name__)
 api = Api(app)
 
+
+# Gonna change this to a database later -> using list for testing purposes
 alunos = [
     {'id': 0,
      'nome': 'Jhonatan',
@@ -22,11 +24,13 @@ alunos = [
      }
 ]
 
+# Homepage for de API (there is no need for this btw)
 @app.route('/')
 def homepage():
     return render_template('homepage.html')
 
 
+# Page for students (by ID)   URL/aluno/{student_id}
 class Aluno(Resource):
     def get(self, id):
         try:
@@ -51,6 +55,7 @@ class Aluno(Resource):
 
 
 
+# Page to register students 
 class Registrar_Aluno(Resource):
     def get(self):
         return alunos
@@ -64,6 +69,7 @@ class Registrar_Aluno(Resource):
 
 
 
+# RESTful architeture: adding an URN to each class
 api.add_resource(Aluno, '/aluno/<int:id>')
 api.add_resource(Registrar_Aluno, '/aluno')
 
