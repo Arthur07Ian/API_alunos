@@ -1,28 +1,12 @@
 from flask import Flask, jsonify, render_template, request
 from flask_restful import Resource, Api
-import json
+from models import Alunos, Cursos
+
+
 
 app = Flask(__name__)
 api = Api(app)
 
-
-# Gonna change this to a database later -> using list for testing purposes
-alunos = [
-    {'id': 0,
-     'nome': 'Jhonatan',
-     'cursos': ['matemática', 'física', 'química']
-     },
-
-    {'id': 1,
-     'nome': 'Arthur',
-     'cursos': ['computação', 'física', 'matemática', 'química']
-     },
-
-    {'id':2,
-     'nome':'Beatriz',
-     'cursos': ['história', 'redação', 'biologia']
-     }
-]
 
 # Homepage for de API (there is no need for this btw)
 @app.route('/')
@@ -34,38 +18,69 @@ def homepage():
 class Aluno(Resource):
     def get(self, id):
         try:
-            response = alunos[id]
-        except IndexError:
-            message =  "Aluno de ID {} inexistente".format(id)
-            response = {"status": "erro", "message": message}
+            aluno = Alunos.query.filter_by(id=id).first()
+            response = {
+                'nome': aluno.nome,
+                'id': aluno.id
+            }
+        except AttributeError:
+            response = {
+                'status':'error',
+                'message':'Aluno não encontrado'
+            }
         except Exception:
-            message = "Erro desconhecido"
-            response = {"status": "erro", "message": message}
+            return {'status':'erro', 'message': 'Ocorreu algum erro.'}
         finally:
             return response
 
+
     def put(self, id):
-        dados = json.loads(request.data)
-        alunos[id] = dados
-        return dados
+        try:
+            aluno = Alunos.query.filter_by(id=id)
+            dados = request.json
+            if 'nome' in dados:
+                aluno.nome = dados['nome']
+            response = {
+                'nome':aluno.nome,
+                'id':aluno.id
+            }
+        except AttributeError:
+            return {'status':'erro', 'message': 'Aluno inexistente'}
+        except Exception:
+            return {'status':'erro', 'message': 'Ocorreu algum erro.'}
+        return response
+
     
     def delete(self, id):
-        alunos.pop(id)
-        return {'status': 'sucesso', 'message': 'registro excluido'}
+        try:
+            aluno = Alunos.query.filter_by(id=id)
+            aluno.delete()
+        except AttributeError:
+            return {'status':'erro', 'message': 'Aluno inexistente'}
+        except Exception:
+            return {'status':'erro', 'message': 'Ocorreu algum erro.'}
+        finally:
+            return {'status': 'sucesso', 'message': 'registro excluido'}
 
 
 
 # Page to register students 
 class Registrar_Aluno(Resource):
     def get(self):
-        return alunos
+        alunos = Alunos.query.all()
+        alunos_lista = []
+        for row in alunos:
+            aluno = {"id": row.id,
+                     "nome": row.nome}
+            alunos_lista.append(aluno)
+        response = alunos_lista
+        return response
     
     def post(self):
-        dados = json.loads(request.data)
-        posicao = len(alunos)
-        dados['id'] = posicao
-        alunos.append(dados)
-        return {"status": "sucesso", "message":"registro inserido, aluno inserido no ID {}".format(alunos[len(alunos)-1]['id'])}
+        dados = request.json
+        aluno = Alunos(nome=dados['nome'])
+        aluno.save()
+        return {"status": "sucesso", "message":"registro inserido, aluno inserido no ID {}".format(aluno.id)}
 
 
 
