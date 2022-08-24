@@ -36,7 +36,7 @@ class Aluno(Resource):
 
     def put(self, id):
         try:
-            aluno = Alunos.query.filter_by(id=id)
+            aluno = Alunos.query.filter_by(id=id).first()
             dados = request.json
             if 'nome' in dados:
                 aluno.nome = dados['nome']
@@ -53,7 +53,7 @@ class Aluno(Resource):
     
     def delete(self, id):
         try:
-            aluno = Alunos.query.filter_by(id=id)
+            aluno = Alunos.query.filter_by(id=id).first()
             aluno.delete()
         except AttributeError:
             return {'status':'erro', 'message': 'Aluno inexistente'}
@@ -84,9 +84,30 @@ class Registrar_Aluno(Resource):
 
 
 
+class Registrar_Cursos(Resource):
+    def get(self):
+        cursos = Cursos.query.all()
+        response = [{"nome":curso.nome, "id":curso.id, "aluno":curso.aluno.nome} for curso in cursos]
+        return response
+
+    
+    def post(self):
+        dados = request.json
+        aluno = Alunos.query.filter_by(nome=dados['aluno']).first()
+        curso = Cursos(nome=dados['nome'], aluno=aluno)
+        curso.save()
+        response = {
+            'aluno':curso.aluno.nome,
+            'curso':curso.nome,
+            'id':curso.id
+        }
+        return response
+
+
 # RESTful architeture: adding an URN to each class
 api.add_resource(Aluno, '/aluno/<int:id>')
 api.add_resource(Registrar_Aluno, '/aluno')
+api.add_resource(Registrar_Cursos, '/cursos')
 
 
 if __name__ == '__main__':
