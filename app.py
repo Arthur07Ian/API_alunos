@@ -1,11 +1,21 @@
 from flask import Flask, jsonify, render_template, request
 from flask_restful import Resource, Api
-from models import Alunos, Cursos
+from models import Alunos, Cursos, USUARIOS
+from flask_httpauth import HTTPBasicAuth
 
 
 
 app = Flask(__name__)
 api = Api(app)
+auth = HTTPBasicAuth()
+
+
+
+@auth.verify_password
+def verify_password(username, password):
+    if not (username, password):
+        return False
+    return USUARIOS.query.filter_by(username=username, password=password).first()        # return true or false if the user types the wrong password
 
 
 # Homepage for de API (there is no need for this btw)
@@ -16,9 +26,11 @@ def homepage():
 
 # Page for students (by ID)   URL/aluno/{student_id}
 class Aluno(Resource):
-    def get(self, id):
+    @auth.login_required  # To acess this method is required the user to be loged in
+    def get(self):
         try:
-            aluno = Alunos.query.filter_by(id=id).first()
+            usuario = auth.current_user()
+            aluno = Alunos.query.filter_by(id=usuario.aluno.id).first()
             response = {
                 'nome': aluno.nome,
                 'id': aluno.id
@@ -34,12 +46,15 @@ class Aluno(Resource):
             return response
 
 
-    def put(self, id):
+    @auth.login_required
+    def put(self):
         try:
-            aluno = Alunos.query.filter_by(id=id).first()
+            usuario = auth.current_user()
+            aluno = Alunos.query.filter_by(id=usuario.aluno.id).first()
             dados = request.json
             if 'nome' in dados:
                 aluno.nome = dados['nome']
+                aluno.save()
             response = {
                 'nome':aluno.nome,
                 'id':aluno.id
@@ -50,10 +65,12 @@ class Aluno(Resource):
             return {'status':'erro', 'message': 'Ocorreu algum erro.'}
         return response
 
-    
-    def delete(self, id):
+
+    @auth.login_required
+    def delete(self):
         try:
-            aluno = Alunos.query.filter_by(id=id).first()
+            usuario = auth.current_user()
+            aluno = Alunos.query.filter_by(id=usuario.aluno.id).first()
             aluno.delete()
         except AttributeError:
             return {'status':'erro', 'message': 'Aluno inexistente'}
@@ -75,7 +92,8 @@ class Registrar_Aluno(Resource):
             alunos_lista.append(aluno)
         response = alunos_lista
         return response
-    
+
+
     def post(self):
         dados = request.json
         aluno = Alunos(nome=dados['nome'])
@@ -105,8 +123,8 @@ class Registrar_Cursos(Resource):
 
 
 # RESTful architeture: adding an URN to each class
-api.add_resource(Aluno, '/aluno/<int:id>')
-api.add_resource(Registrar_Aluno, '/aluno')
+api.add_resource(Aluno, '/aluno')
+api.add_resource(Registrar_Aluno, '/alunos')
 api.add_resource(Registrar_Cursos, '/cursos')
 
 

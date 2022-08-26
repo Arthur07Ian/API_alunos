@@ -47,6 +47,26 @@ class Cursos(Base):
         db_session.delete(self)
         db_session.commit()
 
+class USUARIOS(Base):
+    __tablename__='usuarios'
+    id = Column(Integer, primary_key=True)
+    username = Column(String(20), unique=True)
+    password = Column(String(20))
+    aluno_id = Column(Integer, ForeignKey('alunos.id'))
+    aluno = relationship('Alunos')
+
+    def __repr__(self):
+        return '<USUÁRIO: {}>'.format(self.username)
+
+    def save(self):
+        db_session.add(self)
+        db_session.commit()
+
+    def delete(self):
+        db_session.delete(self)
+        db_session.commit()
+
+
 
 
 def init_db():
